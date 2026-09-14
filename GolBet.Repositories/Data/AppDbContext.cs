@@ -1,52 +1,28 @@
 ﻿// GolBet.Repositories/Data/AppDbContext.cs 
 
 using GolBet.Entities;
-
 using GolBet.Entities.Common;
-
 using Microsoft.EntityFrameworkCore;
-
-
-
 namespace GolBet.Repositories.Data;
-
-
 
 public class AppDbContext : DbContext
 
 {
-
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
-
-
     public DbSet<Team> Teams => Set<Team>();
-
     public DbSet<Match> Matches => Set<Match>();
-
     public DbSet<Bet> Bets => Set<Bet>();
-
-
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
 
     {
 
         base.OnModelCreating(modelBuilder);
-
-
-
         // Team names must be unique (case- and accent-insensitive) 
 
         modelBuilder.Entity<Team>()
 
             .Property(t => t.Name)
-
             .UseCollation("SQL_Latin1_General_CP1_CI_AI"); //Esta parte me indica el Sensitive Case 
-
-
-
-
 
         modelBuilder.Entity<Team>()
 
@@ -54,38 +30,20 @@ public class AppDbContext : DbContext
 
             .IsUnique();
 
-
-
         // Double relationship Match -> Team: convention cannot resolve it 
 
         modelBuilder.Entity<Match>()
-
             .HasOne(m => m.HomeTeam)
-
             .WithMany()
-
             .HasForeignKey(m => m.HomeTeamId)
-
             .OnDelete(DeleteBehavior.Restrict);
-
-
-
         modelBuilder.Entity<Match>()
-
             .HasOne(m => m.AwayTeam)
-
             .WithMany()
-
             .HasForeignKey(m => m.AwayTeamId)
-
             .OnDelete(DeleteBehavior.Restrict);
-
-
-
-        // A match with bets cannot be deleted 
-
+        // A match with bets cannot be deleted
         modelBuilder.Entity<Bet>()
-
             .HasOne(b => b.Match)
 
             .WithMany(m => m.Bets)
@@ -133,9 +91,6 @@ public class AppDbContext : DbContext
             }
 
         }
-
-
-
         return base.SaveChangesAsync(cancellationToken);
 
     }
