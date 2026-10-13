@@ -1,9 +1,11 @@
 ﻿// GolBet.Web/Controllers/MatchesController.cs  (versión completa) 
 
 using GolBet.Entities.Enums;
+using GolBet.Repositories.Data;
 using GolBet.Services.DTOs;
 using GolBet.Services.Implementations;
 using GolBet.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -17,13 +19,13 @@ public class MatchesController : Controller
 
     private readonly IMatchService _matchService;
     public MatchesController(IMatchService matchService, ITeamService teamService)
-    { 
-    
+    {
+
         _matchService = matchService;
         _teamService = teamService;
     }
 
-      
+
     // GET /Matches            -> all matches 
 
     // GET /Matches?status=Scheduled -> filtered board 
@@ -48,7 +50,7 @@ public class MatchesController : Controller
     }
 
 
-
+    [Authorize(Roles = DbSeeder.AdminRole)]
     // GET /Matches/Create 
 
     public async Task<IActionResult> Create()
@@ -107,11 +109,90 @@ public class MatchesController : Controller
 
     }
 
-    // GET /Matches/Edit/5  y  POST /Matches/Edit  siguen el mismo molde 
 
-    // (con GetForEditAsync y UpdateAsync); 
+    // GET /Matches/Edit/5 
 
-    // POST /Matches/Deactivate/5 es idéntico al de Teams. 
+    public async Task<IActionResult> Edit(int id)
+
+    {
+
+        var dto = await _matchService.GetForEditAsync(id);
+
+        if (dto is null) return NotFound();
+
+
+
+        await LoadTeamsAsync(); // the form needs the dropdowns too 
+
+        return View(dto);
+
+    }
+
+
+
+    // POST /Matches/Edit 
+
+    [HttpPost, ValidateAntiForgeryToken]
+
+    public async Task<IActionResult> Edit(MatchFormDto dto)
+
+    {
+
+        if (!ModelState.IsValid)
+
+        {
+
+            await LoadTeamsAsync();
+
+            return View(dto);
+
+        }
+
+
+
+        try
+
+        {
+
+            await _matchService.UpdateAsync(dto);
+
+            TempData["Success"] = "Partido actualizado correctamente.";
+
+            return RedirectToAction(nameof(Index));
+
+        }
+
+        catch (InvalidOperationException ex)      // business rule violated 
+
+        {
+
+            ModelState.AddModelError(string.Empty, ex.Message);
+
+            await LoadTeamsAsync();
+
+            return View(dto);
+
+        }
+
+    }
+
+
+
+    // POST /Matches/Deactivate/5 
+
+    [HttpPost, ValidateAntiForgeryToken]
+
+    public async Task<IActionResult> Deactivate(int id)
+
+    {
+
+        await _matchService.DeactivateAsync(id);
+
+        TempData["Success"] = "Partido desactivado.";
+
+        return RedirectToAction(nameof(Index));
+
+    }
 
 
 
@@ -124,5 +205,4 @@ public class MatchesController : Controller
         ViewBag.Teams = new SelectList(teams, "Id", "Name");
 
     }
-
 }
